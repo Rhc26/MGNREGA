@@ -46,8 +46,44 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mgnrega',
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => {
+.then(async () => {
   console.log('✅ Connected to MongoDB');
+  
+  // Check if database is empty and seed if needed
+  const DistrictData = require('./models/DistrictData');
+  const count = await DistrictData.countDocuments();
+  
+  if (count === 0) {
+    console.log('📊 Database is empty. Starting auto-seed...');
+    const { getSampleData, transformAPIData } = require('./services/dataSync');
+    
+    const states = ['GUJARAT', 'MAHARASHTRA', 'RAJASTHAN', 'UTTAR PRADESH', 'MADHYA PRADESH', 'BIHAR'];
+    
+    for (const state of states) {
+      console.log(`   Seeding ${state}...`);
+      const sampleData = getSampleData(state);
+      const transformedData = transformAPIData(sampleData);
+      
+      const bulkOps = transformedData.map(record => ({
+        updateOne: {
+          filter: {
+            stateName: record.stateName,
+            districtName: record.districtName,
+            financialYear: record.financialYear,
+            monthYear: record.monthYear
+          },
+          update: { $set: { ...record, dataSource: 'sample', lastUpdated: new Date() } },
+          upsert: true
+        }
+      }));
+      
+      await DistrictData.bulkWrite(bulkOps);
+      console.log(`   ✅ ${state}: ${transformedData.length} districts`);
+    }
+    console.log('🎉 Auto-seed completed!');
+  } else {
+    console.log(`📊 Database has ${count} records`);
+  }
   
   // Initial data sync
   console.log('🔄 Starting initial data sync...');
