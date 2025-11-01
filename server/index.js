@@ -42,12 +42,14 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mgnrega', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://localhost:27017/mgnrega';
+console.log(`🔗 Attempting to connect to MongoDB...`);
+console.log(`🔑 MongoDB URI present: ${mongoUri ? 'Yes' : 'No'}`);
+
+mongoose.connect(mongoUri)
 .then(async () => {
   console.log('✅ Connected to MongoDB');
+  console.log(`📍 Database: ${mongoose.connection.name}`);
   
   // Check if database is empty and seed if needed
   const DistrictData = require('./models/DistrictData');
@@ -81,6 +83,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mgnrega',
       console.log(`   ✅ ${state}: ${transformedData.length} districts`);
     }
     console.log('🎉 Auto-seed completed!');
+    console.log(`📊 Total records in database: ${await DistrictData.countDocuments()}`);
   } else {
     console.log(`📊 Database has ${count} records`);
   }
@@ -91,6 +94,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/mgnrega',
 })
 .catch((err) => {
   console.error('❌ MongoDB connection error:', err);
+  console.error('💡 Make sure MONGODB_URI or MONGO_URL environment variable is set correctly');
 });
 
 // Schedule daily data sync at 2 AM
