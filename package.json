@@ -10,7 +10,8 @@
     "build": "cd client && npm install && npm run build",
     "start": "node server/index.js",
     "install-all": "npm install && cd client && npm install",
-    "seed": "node server/scripts/seedDatabase.js"
+    "seed": "node server/scripts/seedDatabase.js",
+    "seed-and-start": "node server/scripts/seedDatabase.js && node server/index.js"
   },
   "keywords": ["mgnrega", "government", "data", "visualization"],
   "author": "",
