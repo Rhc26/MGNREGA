@@ -147,14 +147,26 @@ router.get('/:districtName/summary', async (req, res) => {
     const { districtName } = req.params;
     const { state = 'GUJARAT' } = req.query;
     
-    const data = await DistrictData.findOne({
-      stateName: state,
-      districtName: districtName.toUpperCase(),
-      financialYear: '2024-2025'
-    }).sort({ updatedAt: -1 });
+    let data = null;
     
+    // If MongoDB is connected, try to fetch from database
+    if (mongoose.connection.readyState === 1) {
+      data = await DistrictData.findOne({
+        stateName: state,
+        districtName: districtName.toUpperCase(),
+        financialYear: '2024-2025'
+      }).sort({ updatedAt: -1 });
+    }
+    
+    // If no data from database or MongoDB not connected, use fallback
     if (!data) {
-      return res.status(404).json({ error: 'District not found' });
+      const sample = getSampleData(state.toUpperCase());
+      const transformed = transformAPIData(sample);
+      data = transformed.find(r => r.districtName === districtName.toUpperCase());
+      
+      if (!data) {
+        return res.status(404).json({ error: 'District not found' });
+      }
     }
     
     // Simplified metrics for low-literacy population
